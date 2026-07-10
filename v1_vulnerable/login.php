@@ -44,19 +44,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($failedCount >= 5) {
             $error = "Too many failed attempts. Login is temporarily suspended for 15 minutes.";
         } else {
-            // --- VULNERABLE: raw string concatenation into SQL query ---
-            $sql = "SELECT * FROM users WHERE username = '$username' AND password = '$password'";
+            // --- SECURE: parameterized prepared statement ---
+            $sql = "SELECT * FROM users WHERE username = ? AND password = ?";
+            $debugSql = "SELECT * FROM users WHERE username = '$username' AND password = '$password' [Executed securely via Prepared Statement]";
 
-            // Show the raw query on screen -- intentionally bad, for the lab
-            $debugSql = $sql;
-
-            $result = $pdo->query($sql);
-            $user = $result ? $result->fetch(PDO::FETCH_ASSOC) : false;
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$username, $password]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($user) {
                 // Log success
-                $stmt = $pdo->prepare("INSERT INTO login_attempts (ip_address, attempt_time, status) VALUES (?, ?, 'success')");
-                $stmt->execute([$ip, $currentTime]);
+                $logStmt = $pdo->prepare("INSERT INTO login_attempts (ip_address, attempt_time, status) VALUES (?, ?, 'success')");
+                $logStmt->execute([$ip, $currentTime]);
 
                 // --- SECURE: Server-side PHP session tracking ---
                 $_SESSION['username'] = $user['username'];
@@ -65,12 +64,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             } else {
                 // Log failure
-                $stmt = $pdo->prepare("INSERT INTO login_attempts (ip_address, attempt_time, status) VALUES (?, ?, 'failed')");
-                $stmt->execute([$ip, $currentTime]);
+                $logStmt = $pdo->prepare("INSERT INTO login_attempts (ip_address, attempt_time, status) VALUES (?, ?, 'failed')");
+                $logStmt->execute([$ip, $currentTime]);
 
                 $error = "Login failed.";
-                if ($pdo->errorInfo()[2]) {
-                    $error .= " DB error: " . $pdo->errorInfo()[2]; // leaks SQL errors
+                if ($stmt->errorInfo()[2]) {
+                    $error .= " DB error: " . $stmt->errorInfo()[2]; // leaks SQL errors
                 }
             }
         }
@@ -109,19 +108,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="submit" class="btn">Authenticate</button>
             </form>
 
-            <?php if (!empty($debugSql)): ?>
-                <div class="terminal">
-                    <div class="terminal-header">
-                        <div class="terminal-dots">
-                            <span class="terminal-dot dot-red"></span>
-                            <span class="terminal-dot dot-yellow"></span>
-                            <span class="terminal-dot dot-green"></span>
-                        </div>
-                        <span class="terminal-title">Query Debug Console</span>
-                    </div>
-                    <div><strong>Executed SQL:</strong> <?= htmlspecialchars($debugSql) ?></div>
-                </div>
-            <?php endif; ?>
 
         </div>
     </div>
