@@ -1,11 +1,14 @@
 <?php
-/**
- * VULNERABLE: role/username taken straight from client-controlled cookies.
- * An attacker can simply set cookie role=admin in devtools/curl to become admin,
- * with zero server-side verification. Also no check that user is "logged in" at all.
- */
-$username = $_COOKIE['username'] ?? 'Guest';
-$role     = $_COOKIE['role'] ?? 'user';
+session_start();
+
+// Redirect to login page if user is not authenticated
+if (!isset($_SESSION['username'])) {
+    header('Location: login.php');
+    exit;
+}
+
+$username = $_SESSION['username'];
+$role     = $_SESSION['role'] ?? 'user';
 ?>
 <!DOCTYPE html>
 <html lang="en">

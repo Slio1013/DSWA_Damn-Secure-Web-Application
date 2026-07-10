@@ -1,8 +1,8 @@
 <?php
 require_once __DIR__ . '/../includes/db.php';
+session_start();
 
-// VULNERABLE: "access control" is just reading a client-supplied cookie
-$role = $_COOKIE['role'] ?? 'user';
+$role = $_SESSION['role'] ?? 'user';
 
 if ($role !== 'admin') {
     ?>

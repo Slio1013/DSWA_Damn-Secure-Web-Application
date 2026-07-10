@@ -1,5 +1,6 @@
 <?php
-$username = $_COOKIE['username'] ?? 'Guest';
+session_start();
+$username = $_SESSION['username'] ?? 'Guest';
 ?>
 <!DOCTYPE html>
 <html lang="en">

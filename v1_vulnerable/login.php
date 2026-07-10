@@ -16,6 +16,7 @@
  * ====================================================================
  */
 require_once __DIR__ . '/includes/db.php';
+session_start();
 
 $error = '';
 
@@ -57,9 +58,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare("INSERT INTO login_attempts (ip_address, attempt_time, status) VALUES (?, ?, 'success')");
                 $stmt->execute([$ip, $currentTime]);
 
-                // --- VULNERABLE: no real session, just a client-trusted cookie ---
-                setcookie('username', $user['username'], time() + 3600, '/');
-                setcookie('role', $user['role'], time() + 3600, '/');
+                // --- SECURE: Server-side PHP session tracking ---
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['role'] = $user['role'];
                 header('Location: dashboard.php');
                 exit;
             } else {
