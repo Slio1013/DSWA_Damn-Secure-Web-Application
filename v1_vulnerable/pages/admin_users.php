@@ -44,7 +44,7 @@ $users = $pdo->query("SELECT id, username, password, role FROM users")->fetchAll
     <div class="app-container">
         <div class="card">
             <h2 class="card-title" style="text-align: left; margin-bottom: 8px;">Database Administration</h2>
-            <p>VULNERABLE AREA: Sensitive information disclosure. Plaintext passwords are displayed directly from the database.</p>
+            <p>SECURED AREA: Passwords are encrypted using Base64 in the database.</p>
             
             <div class="table-wrapper">
                 <table>
@@ -52,7 +52,7 @@ $users = $pdo->query("SELECT id, username, password, role FROM users")->fetchAll
                         <tr>
                             <th>ID</th>
                             <th>Username</th>
-                            <th>Password (Plaintext)</th>
+                            <th>Password (Base64)</th>
                             <th>Privilege Role</th>
                         </tr>
                     </thead>
@@ -61,7 +61,7 @@ $users = $pdo->query("SELECT id, username, password, role FROM users")->fetchAll
                             <tr>
                                 <td><?= htmlspecialchars($u['id']) ?></td>
                                 <td style="font-weight: 500;"><?= htmlspecialchars($u['username']) ?></td>
-                                <td><code style="background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px; font-size: 13px; color: #fca5a5;"><?= htmlspecialchars($u['password']) ?></code></td>
+                                <td><code style="background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: var(--text-muted); font-family: monospace; word-break: break-all;"><?= htmlspecialchars($u['password']) ?></code></td>
                                 <td>
                                     <span class="badge <?= $u['role'] === 'admin' ? 'badge-admin' : 'badge-user' ?>">
                                         <?= htmlspecialchars($u['role']) ?>

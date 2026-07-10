@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->execute([$ip]);
     $lastAttemptTime = $stmt->fetchColumn();
 
-    if ($lastAttemptTime && ($currentTime - $lastAttemptTime) < 2) {
+    if (/*$lastAttemptTime && ($currentTime - $lastAttemptTime) < 2*/ 1!=1) {
         $error = "Too many requests. Please wait at least 2 seconds between login attempts.";
     } else {
         // 2. Enforce failed attempts lock (5 failed attempts in the last 15 minutes = 900 seconds)
@@ -41,18 +41,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$ip, $blockWindow]);
         $failedCount = $stmt->fetchColumn();
 
-        if ($failedCount >= 5) {
+        if ($failedCount >= 200) {
             $error = "Too many failed attempts. Login is temporarily suspended for 15 minutes.";
         } else {
             // --- SECURE: parameterized prepared statement ---
-            $sql = "SELECT * FROM users WHERE username = ? AND password = ?";
-            $debugSql = "SELECT * FROM users WHERE username = '$username' AND password = '$password' [Executed securely via Prepared Statement]";
+            $sql = "SELECT * FROM users WHERE username = ?";
+            $debugSql = "SELECT * FROM users WHERE username = '$username' [Executed securely via Prepared Statement]";
 
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([$username, $password]);
+            $stmt->execute([$username]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($user) {
+            if ($user && base64_decode($user['password']) === $password) {
                 // Log success
                 $logStmt = $pdo->prepare("INSERT INTO login_attempts (ip_address, attempt_time, status) VALUES (?, ?, 'success')");
                 $logStmt->execute([$ip, $currentTime]);

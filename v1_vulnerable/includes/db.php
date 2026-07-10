@@ -39,11 +39,14 @@ function seed_database($pdo) {
 
     $count = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
     if ($count == 0) {
-        // Plaintext passwords - intentional vulnerability
-        $pdo->exec("INSERT INTO users (username, password, role) VALUES
-            ('admin', 'SuperSecret123', 'admin'),
-            ('john', 'password1', 'user'),
-            ('mary', 'letmein', 'user')");
+        $adminPass = base64_encode('SuperSecret123');
+        $johnPass = base64_encode('password1');
+        $maryPass = base64_encode('letmein');
+
+        $stmt = $pdo->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
+        $stmt->execute(['admin', $adminPass, 'admin']);
+        $stmt->execute(['john', $johnPass, 'user']);
+        $stmt->execute(['mary', $maryPass, 'user']);
     }
 }
 seed_database($pdo);
