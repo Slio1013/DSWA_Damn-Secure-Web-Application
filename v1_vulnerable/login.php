@@ -47,25 +47,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html>
-<head><title>VulnApp Login</title>
-<style>body{font-family:Arial;max-width:420px;margin:60px auto;}
-input{width:100%;padding:8px;margin:6px 0;} .err{color:red;} .dbg{background:#eee;padding:8px;font-size:12px;word-break:break-all;}</style>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VulnApp - Secure Login Portal</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<h2>VulnApp - Login</h2>
-<form method="post">
-    <label>Username</label>
-    <input type="text" name="username">
-    <label>Password</label>
-    <input type="text" name="password">
-    <button type="submit">Login</button>
-</form>
-<?php if ($error): ?><p class="err"><?= $error ?></p><?php endif; ?>
-<?php if (!empty($debugSql)): ?>
-    <p><strong>Debug (query executed):</strong></p>
-    <div class="dbg"><?= $debugSql ?></div>
-<?php endif; ?>
-<p><small>Sample creds: admin/SuperSecret123, john/password1</small></p>
+    <div class="login-container">
+        <div class="card">
+            <h2 class="card-title">DAMN SECURE WEB APP</h2>
+            <p style="text-align: center; font-size: 14px; margin-bottom: 24px;">Please authenticate to access the secure dashboard</p>
+            
+            <?php if ($error): ?>
+                <div class="alert alert-danger">
+                    <span><?= htmlspecialchars($error) ?></span>
+                </div>
+            <?php endif; ?>
+
+            <form method="post">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="text" id="password" name="password" placeholder="Enter your password" required autocomplete="off">
+                </div>
+                <button type="submit" class="btn">Authenticate</button>
+            </form>
+
+            <?php if (!empty($debugSql)): ?>
+                <div class="terminal">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span class="terminal-dot dot-red"></span>
+                            <span class="terminal-dot dot-yellow"></span>
+                            <span class="terminal-dot dot-green"></span>
+                        </div>
+                        <span class="terminal-title">Query Debug Console</span>
+                    </div>
+                    <div><strong>Executed SQL:</strong> <?= htmlspecialchars($debugSql) ?></div>
+                </div>
+            <?php endif; ?>
+
+        </div>
+    </div>
 </body>
 </html>
