@@ -30,6 +30,13 @@ function seed_database($pdo) {
         role TEXT
     )");
 
+    $pdo->exec("CREATE TABLE IF NOT EXISTS login_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ip_address TEXT,
+        attempt_time INTEGER,
+        status TEXT
+    )");
+
     $count = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
     if ($count == 0) {
         // Plaintext passwords - intentional vulnerability

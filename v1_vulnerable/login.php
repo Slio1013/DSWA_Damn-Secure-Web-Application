@@ -23,25 +23,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'];
     $password = $_POST['password'];
 
-    // --- VULNERABLE: raw string concatenation into SQL query ---
-    $sql = "SELECT * FROM users WHERE username = '$username' AND password = '$password'";
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    $currentTime = time();
 
-    // Show the raw query on screen -- intentionally bad, for the lab
-    $debugSql = $sql;
+    // 1. Enforce minimum time gap between requests (2 seconds)
+    $stmt = $pdo->prepare("SELECT attempt_time FROM login_attempts WHERE ip_address = ? ORDER BY attempt_time DESC LIMIT 1");
+    $stmt->execute([$ip]);
+    $lastAttemptTime = $stmt->fetchColumn();
 
-    $result = $pdo->query($sql);
-    $user = $result ? $result->fetch(PDO::FETCH_ASSOC) : false;
-
-    if ($user) {
-        // --- VULNERABLE: no real session, just a client-trusted cookie ---
-        setcookie('username', $user['username'], time() + 3600, '/');
-        setcookie('role', $user['role'], time() + 3600, '/');
-        header('Location: dashboard.php');
-        exit;
+    if ($lastAttemptTime && ($currentTime - $lastAttemptTime) < 2) {
+        $error = "Too many requests. Please wait at least 2 seconds between login attempts.";
     } else {
-        $error = "Login failed.";
-        if ($pdo->errorInfo()[2]) {
-            $error .= " DB error: " . $pdo->errorInfo()[2]; // leaks SQL errors
+        // 2. Enforce failed attempts lock (5 failed attempts in the last 15 minutes = 900 seconds)
+        $blockWindow = $currentTime - 900;
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM login_attempts WHERE ip_address = ? AND status = 'failed' AND attempt_time > ?");
+        $stmt->execute([$ip, $blockWindow]);
+        $failedCount = $stmt->fetchColumn();
+
+        if ($failedCount >= 5) {
+            $error = "Too many failed attempts. Login is temporarily suspended for 15 minutes.";
+        } else {
+            // --- VULNERABLE: raw string concatenation into SQL query ---
+            $sql = "SELECT * FROM users WHERE username = '$username' AND password = '$password'";
+
+            // Show the raw query on screen -- intentionally bad, for the lab
+            $debugSql = $sql;
+
+            $result = $pdo->query($sql);
+            $user = $result ? $result->fetch(PDO::FETCH_ASSOC) : false;
+
+            if ($user) {
+                // Log success
+                $stmt = $pdo->prepare("INSERT INTO login_attempts (ip_address, attempt_time, status) VALUES (?, ?, 'success')");
+                $stmt->execute([$ip, $currentTime]);
+
+                // --- VULNERABLE: no real session, just a client-trusted cookie ---
+                setcookie('username', $user['username'], time() + 3600, '/');
+                setcookie('role', $user['role'], time() + 3600, '/');
+                header('Location: dashboard.php');
+                exit;
+            } else {
+                // Log failure
+                $stmt = $pdo->prepare("INSERT INTO login_attempts (ip_address, attempt_time, status) VALUES (?, ?, 'failed')");
+                $stmt->execute([$ip, $currentTime]);
+
+                $error = "Login failed.";
+                if ($pdo->errorInfo()[2]) {
+                    $error .= " DB error: " . $pdo->errorInfo()[2]; // leaks SQL errors
+                }
+            }
         }
     }
 }
